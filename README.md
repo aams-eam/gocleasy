@@ -7,13 +7,13 @@ You can liberate space from your disk by following the next steps:
 ## Download the Executable
 The application is portable, you don't need to install anything, just download the executable and ready to liberate space. You can download executables for different OS [here](https://github.com/aams-eam/gocleasy/releases).
 ## Initial Path Selection
-When opening the application you can select an initial path or leave blank for analyzing the whole disk:
+When opening the application you can select an initial path or leave blank for analyzing the whole disk.   
 ![Home Page](./screenshots/homePage.png)
 ## File Selection
-Once the scan has finished the files and folders will be shown. Biggest files first, you can select folders and files and navigate through the tree. The first checkbox is for selecting the file for deletion, the second checkbox is for opening a folder to see its content.
+Once the scan has finished the files and folders will be shown. Biggest files first, you can select folders and files and navigate through the tree. The first checkbox is for selecting the file for deletion, the second checkbox is for opening a folder to see its content.   
 ![Selecting Page](./screenshots/selectingFiles.png)
 ## Delete
-Finally, you can Go Clean Easy and confirm your selection. Click "Delete" to liberate the disk from those big useless files...
+Finally, you can Go Clean Easy and confirm your selection. Click "Delete" to liberate the disk from those big useless files...   
 ![Deleting Page](./screenshots/DeletingFiles.png)
 
 
