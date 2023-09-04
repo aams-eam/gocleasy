@@ -31,10 +31,10 @@ const (
 )
 
 type AppLogic struct {
-	theme      *material.Theme // Store the them of the application
-	Files      *files.File     // Used to store the files with their structure
-	Selfiles   []*files.File   // Used to store the files that has been selected
-	files2show []*files.File   // Used to store the filest that are going to be rendered
+	theme      *material.Theme   // Store the them of the application
+	Files      *files.File       // Used to store the files with their structure
+	Selfiles   []*files.File     // Used to store the files that has been selected
+	Files2Show []*files.FileShow // Used to store the filest that are going to be rendered
 	Appstate   State
 }
 
@@ -163,6 +163,17 @@ func createTextNLoading(gtx C, th *material.Theme, text string) layout.FlexChild
 	})
 }
 
+func (applogic *AppLogic) FillFirstLayer2Show() {
+
+	for _, file := range applogic.Files.Files {
+		applogic.Files2Show = append(applogic.Files2Show, &files.FileShow{
+			File:         file,
+			IsSelected:   widget.Bool{},
+			ActionButton: widget.Bool{},
+		})
+	}
+}
+
 func (applogic *AppLogic) ShowLoadingPage(gtx C, actualFilesRead int) D {
 
 	margins := layout.Inset{
@@ -190,7 +201,7 @@ func (applogic *AppLogic) ShowLoadingPage(gtx C, actualFilesRead int) D {
 	)
 }
 
-func selectFilesTableRow(th *material.Theme, file *files.File, numchildren string, filepath string) []layout.FlexChild {
+func selectFilesTableRow(th *material.Theme, file *files.FileShow, numchildren string, filepath string) []layout.FlexChild {
 
 	return []layout.FlexChild{
 		// Name of the file
@@ -210,7 +221,7 @@ func selectFilesTableRow(th *material.Theme, file *files.File, numchildren strin
 		layout.Rigid(layout.Spacer{Width: unit.Dp(25)}.Layout),
 		// Size of the file
 		layout.Rigid(func(gtx C) D {
-			return material.Body1(th, humanize.Bytes(uint64(file.Size))).Layout(gtx)
+			return material.Body1(th, humanize.Bytes(uint64(file.File.Size))).Layout(gtx)
 		}),
 	}
 }
@@ -303,42 +314,102 @@ func (applogic *AppLogic) ShowFiles(gtx C, nextbutton *widget.Clickable, filelis
 	}.Layout(gtx, widgets...)
 }
 
-// Loops over a file tree and fills the second argument with the files that need to be shown.
-// If the file needs to be shown its ActionButton.Value will be true
-func getFiles2Show(children []*files.File, files2show []*files.File) ([]*files.File, int) {
-	var numfiles int = 0
-	var numtmp int = 0
-	var file *files.File
+// Checks if ref is inside slf
+func isFileSelected(ref *files.File, slf []*files.File) bool {
 
-	for i := range children {
-
-		numtmp = 0
-		file = children[i]
-
-		files2show = append(files2show, file) // append the file to show
-		numfiles++
-
-		// Show the files inside if it is a directory and is marked to be shown
-		// also consider that if the directory is selected to be deleted, do not show
-		if file.IsSelected.Value {
-			file.ActionButton.Value = false
-
-		} else if file.IsDir && file.ActionButton.Value && file.Files != nil { // If the file is a dir and the value is true (show)
-			files2show, numtmp = getFiles2Show(file.Files, files2show)
-			numfiles += numtmp
+	for _, file := range slf {
+		if file == ref {
+			return true
 		}
 	}
+	return false
+}
 
-	return files2show, numfiles
+// Calculates how many files need to be deleted from the slice when a folder is closed
+// It loops from the actual position till the end of the slice or till a file with lower
+// level than the folder being closed
+func getNumFiles2NotShow(pos int, level int, sl []*files.FileShow) int {
+
+	var res int = 0
+
+	for ; pos < len(sl); pos++ {
+		file := sl[pos]
+		if file.File.Level <= level {
+			return res
+		}
+		res++
+	}
+
+	return res
+}
+
+// It loops over Files2Show and checks if there is any checkbox has been clicked to open a folder.
+// It also checks if any folder/file has been selected and adds it to Selfiles
+func (applogic *AppLogic) getFiles2Show() {
+
+	var file *files.FileShow
+
+	index := 0
+	for index < len(applogic.Files2Show) {
+
+		file = applogic.Files2Show[index]
+
+		// Check Open/Close folders
+		if file.ActionButton.Changed() && file.File.IsDir {
+			if file.ActionButton.Value {
+				// Add children from Files2Show (Open folder)
+
+				// Create temporal slice to add to children (Files2Show)
+				slice2add := []*files.FileShow{}
+				for _, file2append := range file.File.Files {
+
+					// Check if the file was selected before to add it selected
+					slice2add = append(slice2add, &files.FileShow{
+						File:         file2append,
+						IsSelected:   widget.Bool{Value: isFileSelected(file2append, applogic.Selfiles)},
+						ActionButton: widget.Bool{},
+					})
+				}
+
+				// Insert temporal slice into files to show
+				applogic.Files2Show = append(applogic.Files2Show[:index+1], append(slice2add, applogic.Files2Show[index+1:]...)...)
+
+			} else {
+				// Delete children from Files2Show (Close folder)
+				numFiles2NotShow := getNumFiles2NotShow(index+1, file.File.Level, applogic.Files2Show)
+				applogic.Files2Show = append(applogic.Files2Show[:index+1], applogic.Files2Show[index+1+numFiles2NotShow:]...)
+			}
+		}
+
+		// Check selected files
+		if file.IsSelected.Changed() {
+			if file.IsSelected.Value {
+				// Add file to Selfiles
+				applogic.Selfiles = append(applogic.Selfiles, file.File)
+
+			} else {
+				// Delete file from Selfiles
+				for id, delfile := range applogic.Selfiles {
+					if delfile == file.File {
+						applogic.Selfiles = append(applogic.Selfiles[:id], applogic.Selfiles[id+1:]...)
+					}
+				}
+
+			}
+		}
+
+		index++
+
+	}
 }
 
 // Contains the file Tree
 func (applogic *AppLogic) fileTree(gtx C, filelist *widget.List, path string) D {
 
 	// empty the files to show
-	applogic.files2show = nil
-	var numfiles int
-	applogic.files2show, numfiles = getFiles2Show(applogic.Files.Files, applogic.files2show)
+	var numfiles int = 0
+	applogic.getFiles2Show()
+	numfiles = len(applogic.Files2Show)
 
 	if numfiles == 0 {
 		return D{}
@@ -346,16 +417,16 @@ func (applogic *AppLogic) fileTree(gtx C, filelist *widget.List, path string) D 
 
 	return filelist.List.Layout(gtx, numfiles, func(gtx C, index int) D {
 
-		var file *files.File = applogic.files2show[index]
+		var file *files.FileShow = applogic.Files2Show[index]
 		var widgets []layout.FlexChild
 		var spacers []layout.FlexChild
 
-		spacers = append(spacers, layout.Rigid(layout.Spacer{Width: unit.Dp(file.Level * 25)}.Layout))
+		spacers = append(spacers, layout.Rigid(layout.Spacer{Width: unit.Dp(file.File.Level * 25)}.Layout))
 
-		if file.IsDir {
-			widgets = selectFilesTableRow(applogic.theme, file, humanize.Comma(file.NumChildren), fmt.Sprintf("%s/", filepath.Join(path, file.Name)))
+		if file.File.IsDir {
+			widgets = selectFilesTableRow(applogic.theme, file, humanize.Comma(file.File.NumChildren), fmt.Sprintf("%s/", filepath.Join(path, file.File.Name)))
 		} else {
-			widgets = selectFilesTableRow(applogic.theme, file, "-", filepath.Join(path, file.Name))
+			widgets = selectFilesTableRow(applogic.theme, file, "-", filepath.Join(path, file.File.Name))
 		}
 		widgets = append(spacers, widgets...)
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, widgets...)

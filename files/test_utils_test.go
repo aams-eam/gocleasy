@@ -3,40 +3,34 @@ package files
 import (
 	"testing"
 
-	"gioui.org/widget"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestBuildFile(t *testing.T) {
-	a := &File{"a", nil, 100, false, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
+	a := &File{"a", 100, false, []*File{}, "", 0, 0}
 	build := NewTestFile("a", 100)
 	assert.Equal(t, a, build)
 }
 
 func TestBuildFolder(t *testing.T) {
-	a := &File{"a", nil, 0, true, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
+	a := &File{"a", 0, true, []*File{}, "", 0, 0}
 	build := NewTestFolder("a")
 	assert.Equal(t, a, build)
 }
 
 func TestBuildFolderWithFile(t *testing.T) {
-	e := &File{"e", nil, 100, false, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-	d := &File{"d", nil, 100, true, []*File{e}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-	e.Parent = d
+	e := &File{"e", 100, false, []*File{}, "", 0, 0}
+	d := &File{"d", 100, true, []*File{e}, "", 0, 0}
 	build := NewTestFolder("d", NewTestFile("e", 100))
 	assert.Equal(t, d, build)
 }
 
 func TestBuildComplexFolder(t *testing.T) {
-	e := &File{"e", nil, 100, false, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-	d := &File{"d", nil, 100, true, []*File{e}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-	e.Parent = d
-	b := &File{"b", nil, 50, false, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-	c := &File{"c", nil, 100, false, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-	a := &File{"a", nil, 250, true, []*File{b, c, d}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-	b.Parent = a
-	c.Parent = a
-	d.Parent = a
+	e := &File{"e", 100, false, []*File{}, "", 0, 0}
+	d := &File{"d", 100, true, []*File{e}, "", 0, 0}
+	b := &File{"b", 50, false, []*File{}, "", 0, 0}
+	c := &File{"c", 100, false, []*File{}, "", 0, 0}
+	a := &File{"a", 250, true, []*File{b, c, d}, "", 0, 0}
 	build := NewTestFolder("a", NewTestFile("b", 50), NewTestFile("c", 100), NewTestFolder("d", NewTestFile("e", 100)))
 	assert.Equal(t, a, build)
 }

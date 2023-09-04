@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"gioui.org/widget"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,17 +52,6 @@ func createReadDir(ff fakeFile) ReadDir {
 	}
 }
 
-func TestFilePath(t *testing.T) {
-	root := NewTestFolder("root",
-		NewTestFolder("folder1",
-			NewTestFile("file1", 0),
-		),
-	)
-	want := filepath.Join("root", "folder1", "file1")
-	file1 := FindTestFile(root, "file1")
-	assert.Equal(t, want, file1.Path())
-}
-
 func TestWalkFolderOnSimpleDir(t *testing.T) {
 	testStructure := fakeFile{"a", 0, []fakeFile{
 		{"b", 0, []fakeFile{
@@ -82,17 +70,14 @@ func TestWalkFolderOnSimpleDir(t *testing.T) {
 	progress := make(chan int, 3)
 	result := WalkFolder("b", createReadDir(testStructure), dummyIgnoreFunction, progress)
 	buildExpected := func() *File {
-		b := &File{"b", nil, 180, true, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-		c := &File{"c", b, 100, false, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-		d := &File{"d", b, 80, true, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
+		b := &File{"b", 180, true, []*File{}, "", 0, 0}
+		c := &File{"c", 100, false, []*File{}, "", 0, 0}
+		d := &File{"d", 80, true, []*File{}, "", 0, 0}
 		b.Files = []*File{c, d}
 
-		e := &File{"e", nil, 50, false, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-		e.Parent = d
-		f := &File{"f", nil, 30, false, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-		g := &File{"g", nil, 0, true, []*File{}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-		f.Parent = d
-		g.Parent = d
+		e := &File{"e", 50, false, []*File{}, "", 0, 0}
+		f := &File{"f", 30, false, []*File{}, "", 0, 0}
+		g := &File{"g", 0, true, []*File{}, "", 0, 0}
 		d.Files = []*File{e, f, g}
 
 		return b

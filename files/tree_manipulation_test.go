@@ -3,7 +3,6 @@ package files
 import (
 	"testing"
 
-	"gioui.org/widget"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,23 +35,23 @@ func TestSortFolder(t *testing.T) {
 }
 
 func TestPruneFolder(t *testing.T) {
-	folder := &File{"b", nil, 260, true, []*File{
-		{"c", nil, 100, false, []*File{}, "", 1, widget.Bool{}, widget.Bool{}, 0},
-		{"d", nil, 160, true, []*File{
-			{"e", nil, 50, false, []*File{}, "", 2, widget.Bool{}, widget.Bool{}, 0},
-			{"f", nil, 30, false, []*File{}, "", 2, widget.Bool{}, widget.Bool{}, 0},
-			{"g", nil, 80, true, []*File{
-				{"i", nil, 50, false, []*File{}, "", 3, widget.Bool{}, widget.Bool{}, 0},
-				{"j", nil, 30, false, []*File{}, "", 3, widget.Bool{}, widget.Bool{}, 0},
-			}, "", 2, widget.Bool{}, widget.Bool{}, 0},
-		}, "", 1, widget.Bool{}, widget.Bool{}, 0},
-	}, "", 0, widget.Bool{}, widget.Bool{}, 0}
-	expected := &File{"b", nil, 260, true, []*File{
-		{"c", nil, 100, false, []*File{}, "", 1, widget.Bool{}, widget.Bool{}, 0},
-		{"d", nil, 160, true, []*File{
-			{"g", nil, 80, true, []*File{}, "", 2, widget.Bool{}, widget.Bool{}, 0},
-		}, "", 1, widget.Bool{}, widget.Bool{}, 0},
-	}, "", 0, widget.Bool{}, widget.Bool{}, 0}
+	folder := &File{"b", 260, true, []*File{
+		{"c", 100, false, []*File{}, "", 1, 0},
+		{"d", 160, true, []*File{
+			{"e", 50, false, []*File{}, "", 2, 0},
+			{"f", 30, false, []*File{}, "", 2, 0},
+			{"g", 80, true, []*File{
+				{"i", 50, false, []*File{}, "", 3, 0},
+				{"j", 30, false, []*File{}, "", 3, 0},
+			}, "", 2, 0},
+		}, "", 1, 0},
+	}, "", 0, 0}
+	expected := &File{"b", 260, true, []*File{
+		{"c", 100, false, []*File{}, "", 1, 0},
+		{"d", 160, true, []*File{
+			{"g", 80, true, []*File{}, "", 2, 0},
+		}, "", 1, 0},
+	}, "", 0, 0}
 	PruneSmallFiles(folder, 60)
 	assert.Equal(t, expected, folder)
 }

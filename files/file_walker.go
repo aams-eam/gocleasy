@@ -13,25 +13,20 @@ import (
 
 // File structure representing files and folders with their accumulated sizes
 type File struct {
-	Name         string // Name of the file
-	Parent       *File
-	Size         int64       // Size of the file or directory
-	IsDir        bool        // To indicate if the file is a folder or not
-	Files        []*File     // Files that contain in case IsDir == true.
-	FullPath     string      // Path of the file
-	Level        int         // Indicates in which level the file is compared with the root level
-	IsSelected   widget.Bool // See if the file is selected or not. Will be used to fill AppLogic.selfiles.
-	ActionButton widget.Bool // See if the file is needs to be shown in the interface. Will be used to fill AppLogic.files2show.
-	// Children     []File // ToDo: Change in main everything needed because now Children is Files and []*File instead of []File
-	NumChildren int64 // Num of files that the directory contains
+	Name        string  // Name of the file
+	Size        int64   // Size of the file or directory
+	IsDir       bool    // To indicate if the file is a folder or not
+	Files       []*File // Files that contain in case IsDir == true.
+	FullPath    string  // Path of the file
+	Level       int     // Indicates in which level the file is compared with the root level
+	NumChildren int64   // Num of files that the directory contains
 }
 
-// Path builds a file system location for given file
-func (f *File) Path() string {
-	if f.Parent == nil {
-		return f.Name
-	}
-	return filepath.Join(f.Parent.Path(), f.Name)
+// This allows to reduce RAM usage. We only have widget.Bools for shown files instead of the whole filesystem
+type FileShow struct {
+	File         *File       // Points to a file
+	IsSelected   widget.Bool // Indicate if the file has been selected
+	ActionButton widget.Bool // Indicate if the folder has to be opened/closed
 }
 
 // UpdateSize goes through subfiles and subfolders and accumulates their size
@@ -132,35 +127,31 @@ func walkSubFolderConcurrently(
 		} else {
 			size := entry.Size()
 			file := &File{
-				Name:         entry.Name(),
-				Parent:       result,
-				Size:         size,
-				IsDir:        false,
-				Files:        []*File{},
-				FullPath:     filepath.Join(path, entry.Name()), // ToDo: Make sure this is filled correctly
-				Level:        level,                             // ToDo: Make sure this is filled correctly
-				IsSelected:   widget.Bool{},
-				ActionButton: widget.Bool{},
-				NumChildren:  0, // ToDo: Make sure this is filled correctly
+				Name:        entry.Name(),
+				FullPath:    filepath.Join(path, entry.Name()),
+				Size:        size,
+				IsDir:       false,
+				Level:       level,
+				NumChildren: 0,
+				Files:       []*File{},
 			}
 			mutex.Lock()
 			result.Files = append(result.Files, file)
 			mutex.Unlock()
 		}
 	}
+
+	result.FullPath = path
+	result.Level = level
+	result.IsDir = true
 	if parent != nil {
-		result.FullPath = path // ToDo: Make sure this is filled correctly
-		result.Level = level   // ToDo: Make sure this is filled correctly
-		result.IsSelected = widget.Bool{}
-		result.ActionButton = widget.Bool{}
 		result.Name = name
-		result.Parent = parent
 	} else {
 		// Root dir
 		// TODO unit test this Join
 		result.Name = filepath.Join(dirName, name)
 	}
-	result.IsDir = true
+
 	return result
 }
 

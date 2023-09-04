@@ -122,35 +122,35 @@ func deleteStringFromSlice(str string, slice []string) []string {
 }
 
 func printTree(file *files.File, indent string) {
-	fmt.Printf("%s%s\n", indent, file.Name)
+	fmt.Printf("%s%s\n", indent, file.FullPath)
 	for _, subFile := range file.Files {
 		printTree(subFile, indent+"\t")
 	}
 }
 
-func getSelectedFiles(children []*files.File, selfiles *[]*files.File) []*files.File {
-
-	// create a pointer to every file
-	var filep *files.File
-
-	for index := range children {
-		filep = children[index]
-
-		// If it is selected add to selfiles
-		if filep.IsSelected.Value {
-			*selfiles = append(*selfiles, filep)
-		}
-
-		if (filep.IsDir) && // It is a directory
-			((filep.Files != nil) && (len(filep.Files) > 0)) && // It contains files inside
-			!filep.IsSelected.Value { // It is not a selected folder
-
-			*selfiles = getSelectedFiles(filep.Files, selfiles) // Look for selected files inside
-		}
-	}
-
-	return *selfiles
-}
+// func getSelectedFiles(children []*files.File, selfiles *[]*files.File) []*files.File {
+//
+// 	// create a pointer to every file
+// 	var filep *files.File
+//
+// 	for index := range children {
+// 		filep = children[index]
+//
+// 		// If it is selected add to selfiles
+// 		if filep.IsSelected.Value {
+// 			*selfiles = append(*selfiles, filep)
+// 		}
+//
+// 		if (filep.IsDir) && // It is a directory
+// 			((filep.Files != nil) && (len(filep.Files) > 0)) && // It contains files inside
+// 			!filep.IsSelected.Value { // It is not a selected folder
+//
+// 			*selfiles = getSelectedFiles(filep.Files, selfiles) // Look for selected files inside
+// 		}
+// 	}
+//
+// 	return *selfiles
+// }
 
 func copyFilesInClipboard(selfiles []*files.File) {
 
@@ -241,6 +241,8 @@ func Run(win *app.Window) error {
 					go applogic.ReportProgress(win, &totalFilesReadShow, scanfilesLoadingChann)
 					go func() {
 						applogic.Files = files.WalkFolder(initialpath, ioutil.ReadDir, ignore.IgnoreBasedOnIgnoreFile(ignore.ReadIgnoreFile()), scanfilesLoadingChann)
+						// Add first level of files to be shown
+						applogic.FillFirstLayer2Show()
 					}()
 					applogic.ShowLoadingPage(gtx, totalFilesReadShow)
 				}
@@ -248,9 +250,7 @@ func Run(win *app.Window) error {
 
 			// Go to confirm deleting the files
 			if nextButton.Clicked() {
-				// See which are the selected files everytime we click next button to go to delFileS
-				applogic.Selfiles = nil
-				applogic.Selfiles = getSelectedFiles(applogic.Files.Files, &applogic.Selfiles)
+				// applogic.Selfiles = getSelectedFiles(applogic.Files.Files, &applogic.Selfiles)
 				applogic.Appstate = guiutils.DelFilesS
 			}
 
